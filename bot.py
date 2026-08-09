@@ -26,7 +26,7 @@ USER_MODES = {}
 
 MAX_HISTORY_LENGTH = 60
 
-# --- ИНСТРУКЦИЯ ПО ФОРМАТУ И ДЛИНЕ (ОБЩАЯ ДЛЯ ВСЕХ РЕЖИМОВ) ---
+# --- ИНСТРУКЦИЯ ПО ФОРМАТУ И ДЛИНЕ ---
 FORMAT_INSTRUCTION = (
     "\n\nТРЕБОВАНИЯ К СТИЛЮ И ФОРМАТУ ОТВЕТА:\n"
     "1. ВСЕГДА пиши развернутые, подробные и объёмные ответы (минимум 2-4 полноценных абзаца). Избегай коротких и односложных ответов.\n"
@@ -72,10 +72,12 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+# Главная расширенная клавиатура под полем ввода
 def get_main_keyboard():
     keyboard = [
         [KeyboardButton("📸 Пришли фото"), KeyboardButton("🎭 Режим общения")],
-        [KeyboardButton("🧹 Очистить память")]
+        [KeyboardButton("🧹 Очистить память"), KeyboardButton("ℹ️ Помощь")],
+        [KeyboardButton("🔄 Перезапуск (/start)")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -92,10 +94,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     USER_HISTORIES[chat_id] = []
     USER_MODES[chat_id] = "flirt"
     
+    # Настройка списка команд в системной кнопке Menu
+    await context.bot.set_my_commands([
+        ("start", "Запустить/Перезапустить диалог"),
+        ("help", "Инструкция и помощь"),
+        ("clear", "Сбросить память общения"),
+        ("cancel", "Отменить текущий запрос")
+    ])
+    
     await update.message.reply_text(
         "Привет... Наконец-то ты здесь 😏\n\n"
         "Я готова к любому разговору. Текущий режим: *🔥 Флирт*.\n"
-        "Можешь изменить режим кнопкой ниже или просто написать мне.",
+        "Можешь менять режим общения или просить фото кнопками ниже.",
+        parse_mode="Markdown",
+        reply_markup=get_main_keyboard()
+    )
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "💡 **Инструкция по кнопкам:**\n\n"
+        "• **📸 Пришли фото** — отправляет кадр по контексту вашего общения.\n"
+        "• **🎭 Режим общения** — выбор между Романтикой, Флиртом и Без цензуры.\n"
+        "• **🧹 Очистить память** — сброс сохранённых сообщений.\n"
+        "• **🔄 Перезапуск (/start)** — полное обновление диалога.\n\n"
+        "Просто пиши любое сообщение, я прочту и отвечу! 🔥",
         parse_mode="Markdown",
         reply_markup=get_main_keyboard()
     )
@@ -198,7 +220,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_text = update.message.text
 
-    if user_text == "🧹 Очистить память":
+    # Обработка кнопок из нижнего меню
+    if user_text in ["🔄 Перезапуск (/start)", "Рестарт", "рестарт", "старт", "Старт"]:
+        await start(update, context)
+        return
+    elif user_text == "ℹ️ Помощь":
+        await help_command(update, context)
+        return
+    elif user_text == "🧹 Очистить память":
         await clear_memory(update, context)
         return
 
@@ -220,23 +249,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         messages_to_send = [{"role": "system", "content": system_instruction}] + USER_HISTORIES[chat_id]
 
-        # Запрос к Llama с увеличенным max_tokens для длинных ответов
         chat_completion = groq_client.chat.completions.create(
             messages=messages_to_send,
             model="llama-3.3-70b-versatile",
-            max_tokens=800,  # Увеличен лимит генерации
-            temperature=0.75  # Баланс между творчеством и логикой
+            max_tokens=800,
+            temperature=0.75
         )
         
         reply_text = chat_completion.choices[0].message.content
         
         USER_HISTORIES[chat_id].append({"role": "assistant", "content": reply_text})
 
-        # Ответ отправляется с поддержкой Markdown, чтобы звездочки автоматически превращались в *курсив*
         await update.message.reply_text(reply_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
     except Exception as e:
-        # Если Markdown выдаст ошибку форматирования, отправляем простым текстом
         logging.error(f"Ошибка Groq/Markdown: {e}")
         try:
             await update.message.reply_text(reply_text, reply_markup=get_main_keyboard())
@@ -269,6 +295,8 @@ if __name__ == '__main__':
     )
     
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("clear", clear_memory))
     app.add_handler(mode_handler)
     app.add_handler(img_handler)
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
