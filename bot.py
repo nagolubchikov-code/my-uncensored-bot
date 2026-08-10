@@ -16,10 +16,9 @@ from openai import OpenAI
 
 # ---------------- НАСТРОЙКИ КЛЮЧЕЙ ----------------
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
-# Проверенная бессензурная модель от Dolphin/Venice
-MODEL_NAME = "gryphe/mythomax-l2-13b:free"
+# Локальная модель через LM Studio и ngrok
+MODEL_NAME = "lumimaid-v0.2-8b"
 
 WAITING_FOR_IMG_PROMPT = 1
 WAITING_FOR_MODE_SELECTION = 2
@@ -67,10 +66,10 @@ def run_dummy_server():
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     server.serve_forever()
 
-# Клиент OpenAI, настроенный на OpenRouter
+# Клиент OpenAI, настроенный на локальный сервер LM Studio через ngrok
 ai_client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=OPENROUTER_API_KEY
+    base_url="https://brownnose-deafening-relieving.ngrok-free.dev/v1",
+    api_key="lm-studio"
 )
 
 logging.basicConfig(
@@ -245,10 +244,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(reply_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
     except Exception as e:
-        logging.error(f"Ошибка OpenRouter/Markdown: {e}")
+        logging.error(f"Ошибка локальной модели/Markdown: {e}")
         if reply_text:
             try:
-                # Если упало из-за ошибок разметки Markdown, отправляем как обычный текст
                 await update.message.reply_text(reply_text, reply_markup=get_main_keyboard())
                 return
             except Exception:
