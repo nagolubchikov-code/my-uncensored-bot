@@ -19,7 +19,7 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 # Проверенная бессензурная модель от Dolphin/Venice
-MODEL_NAME = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+MODEL_NAME = "mistral-large"
 
 WAITING_FOR_IMG_PROMPT = 1
 WAITING_FOR_MODE_SELECTION = 2
@@ -69,8 +69,8 @@ def run_dummy_server():
 
 # Клиент OpenAI, настроенный на OpenRouter
 ai_client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=OPENROUTER_API_KEY,
+    base_url="https://text.pollinations.ai/openai",
+    api_key="pk_free"
 )
 
 logging.basicConfig(
