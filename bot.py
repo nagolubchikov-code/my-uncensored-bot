@@ -41,7 +41,7 @@ MODES = {
 }
 
 DEFAULT_MODE = "romance"
-user_modes = {}       
+user_modes = {}        
 user_histories = {}   
 
 def get_user_history(user_id: int):
@@ -145,9 +145,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             model=MODEL_NAME,
             messages=history,
             max_tokens=350,
-            temperature=0.7,  # Чуть ниже, чтобы модель строго держала роль
-            top_p=0.9,
-            repetition_penalty=1.1
+            temperature=0.7,
+            top_p=0.9
         )
 
         reply_text = response.choices[0].message.content
