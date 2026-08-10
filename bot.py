@@ -19,7 +19,7 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 # Бесплатная бессензурная модель OpenRouter для ролевых игр
-MODEL_NAME = "arliai/zerotwo-3b:free"
+MODEL_NAME = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
 
 WAITING_FOR_IMG_PROMPT = 1
 WAITING_FOR_MODE_SELECTION = 2
